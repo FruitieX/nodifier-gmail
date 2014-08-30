@@ -51,7 +51,7 @@ rl.question('Enter the code here followed by return:\n', function(code) {
     // request access token
     oauth2Client.getToken(code, function(err, tokens) {
         // write token to file and quit
-        fs.writeFile(process.env.HOME + '/.gmailOauth2Token.json', JSON.stringify(tokens));
+        fs.writeFileSync(process.env.HOME + '/.gmailOauth2Token.json', JSON.stringify(tokens));
         console.log('Wrote file ~/.gmailOauth2Token.json');
         process.exit();
     });

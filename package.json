@@ -1,0 +1,28 @@
+{
+  "name": "nodifier-gmail",
+  "version": "0.0.0",
+  "description": "gmail client for nodifier",
+  "main": "gmail.js",
+  "dependencies": {
+    "googleapis": "^1.0.11"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FruitieX/nodifier-gmail"
+  },
+  "keywords": [
+    "nodifier",
+    "gmail",
+    "notifications"
+  ],
+  "author": "FruitieX",
+  "license": "Apache License 2.0",
+  "bugs": {
+    "url": "https://github.com/FruitieX/nodifier-gmail/issues"
+  },
+  "homepage": "https://github.com/FruitieX/nodifier-gmail"
+}

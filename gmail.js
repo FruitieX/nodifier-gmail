@@ -29,41 +29,46 @@ var refreshGmail = function() {
             console.log('ERROR in refreshGmail()');
             console.log(err);
         } else {
-            var gmailUnread = response.messages
+            var gmailUnread = response.messages;
 
-            for(var i = 0; i < gmailUnread.length; i++) {
-                // new unread mail
-                if(!unread[gmailUnread[i].id]) {
-                    unread[gmailUnread[i].id] = true;
-                    console.log('refreshGmail(): synced unread mail ' + gmailUnread[i].id);
+            if(gmailUnread) {
+                for(var i = 0; i < gmailUnread.length; i++) {
+                    // new unread mail
+                    if(!unread[gmailUnread[i].id]) {
+                        unread[gmailUnread[i].id] = true;
+                        console.log('refreshGmail(): synced unread mail ' + gmailUnread[i].id);
 
-                    // get message subject and send notification to nodifier server
-                    getShortMessage(gmailUnread[i].id, function(shortMessage, id) {
-                        var notification = {
-                            'uid': id,
-                            'text': shortMessage,
-                            'openwith': 'browser',
-                            'url': 'https://mail.google.com/mail/u/0/#inbox/' + id,
-                            'source': 'mail',
-                            'sourcebg': 'blackBright',
-                            'sourcefg': 'whiteBright',
-                            'context': 'gmail',
-                            'contextbg': 'red',
-                            'contextfg': 'black'
-                        };
+                        // get message subject and send notification to nodifier server
+                        getShortMessage(gmailUnread[i].id, function(shortMessage, id) {
+                            var notification = {
+                                'uid': id,
+                                'text': shortMessage,
+                                'openwith': 'browser',
+                                'url': 'https://mail.google.com/mail/u/0/#inbox/' + id,
+                                'source': 'mail',
+                                'sourcebg': 'blackBright',
+                                'sourcefg': 'whiteBright',
+                                'context': 'gmail',
+                                'contextbg': 'red',
+                                'contextfg': 'black'
+                            };
 
-                        socket.send('newNotification', notification);
-                    });
+                            socket.send('newNotification', notification);
+                        });
+                    }
                 }
             }
 
             // look for messages in 'unread' that were marked as read in gmail
             for(var id in unread) {
-                var match = gmailUnread.filter(function(msg) {
-                    return msg.id === id;
-                });
+                var match;
+                if(gmailUnread) {
+                    match = gmailUnread.filter(function(msg) {
+                        return msg.id === id;
+                    });
+                }
 
-                if(!match.length) {
+                if(!gmailUnread || !match.length) {
                     delete(unread[id]);
                     console.log('refreshGmail(): synced read mail ' + id);
 

@@ -159,3 +159,8 @@ socket.once('open', function() {
     refreshGmail();
     setInterval(refreshGmail, 5000);
 });
+
+process.on('uncaughtException', function (err) {
+    console.error(err.stack);
+    console.log("ERROR! Node not exiting.");
+});

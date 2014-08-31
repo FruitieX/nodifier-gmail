@@ -13,6 +13,9 @@ var oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL);
 var credentials = fs.readFileSync(process.env.HOME + '/.gmailOauth2Token.json').toString('utf8');
 oauth2Client.setCredentials(JSON.parse(credentials));
 
+var nodifierConnect = require('nodifier_connect');
+var socket = new nodifierConnect();
+
 // keep track of which messages we've seen before
 var unread = {};
 
@@ -26,17 +29,31 @@ var refreshGmail = function() {
             console.log('ERROR in refreshGmail()');
             console.log(err);
         } else {
-            //console.log('refreshGmail(): got response:');
-            //console.log(response);
-            //console.log('unread is:');
-            //console.log(unread);
             var gmailUnread = response.messages
+
             for(var i = 0; i < gmailUnread.length; i++) {
                 // new unread mail
                 if(!unread[gmailUnread[i].id]) {
-                    // TODO: send id to nodifier
                     unread[gmailUnread[i].id] = true;
                     console.log('refreshGmail(): synced unread mail ' + gmailUnread[i].id);
+
+                    // get message subject and send notification to nodifier server
+                    getShortMessage(gmailUnread[i].id, function(shortMessage, id) {
+                        var notification = {
+                            'uid': id,
+                            'text': shortMessage,
+                            'openwith': 'browser',
+                            'url': 'https://mail.google.com/mail/u/0/#inbox/' + id,
+                            'source': 'mail',
+                            'sourcebg': 'blackBright',
+                            'sourcefg': 'whiteBright',
+                            'context': 'gmail',
+                            'contextbg': 'red',
+                            'contextfg': 'black'
+                        };
+
+                        socket.send('newNotification', notification);
+                    });
                 }
             }
 
@@ -47,9 +64,15 @@ var refreshGmail = function() {
                 });
 
                 if(!match.length) {
-                    // TODO: mark id as read in nodifier
                     delete(unread[id]);
                     console.log('refreshGmail(): synced read mail ' + id);
+
+                    // mark id as read in nodifier
+                    socket.send('markAs', {
+                        'read': true,
+                        'uid': id,
+                        'source': 'mail'
+                    });
                 }
             }
         }
@@ -104,17 +127,30 @@ var getShortMessage = function(id, callback) {
             var from = headers.filter(function(element) {
                 return element.name === 'From';
             })[0].value;
+            from = from.replace(/\s<\S+@\S+>/, '');
 
             var shortMessage = from + ': ' + subject;
 
             //console.log(require('util').inspect(response, { depth: null, colors: true }));
 
-            callback(shortMessage);
+            callback(shortMessage, id);
         }
     });
 };
 
-refreshGmail();
-setInterval(refreshGmail, 5000);
+socket.on('markAs', function(notifications) {
+    for (var i = notifications.length - 1; i >= 0; i--) {
+        // TODO: more precise checking
+        if(notifications[i].source === 'mail') {
+            if(notifications[i].read)
+                gmailSetRead(notifications[i].uid, true);
+            else
+                gmailSetRead(notifications[i].uid, false);
+        }
+    }
+});
 
-//gmailSetRead('1480dd59e3de2e9b', true);
+socket.once('open', function() {
+    refreshGmail();
+    setInterval(refreshGmail, 5000);
+});

@@ -3,15 +3,19 @@ var fs = require('fs');
 
 var OAuth2Client = google.auth.OAuth2;
 var gmail = google.gmail('v1');
-
-// Client ID and client secret are available at
-// https://code.google.com/apis/console
 var CLIENT_ID = '301862269671-kp5lmqk7q3t3mgt6tls7vhb4h26q9mh5.apps.googleusercontent.com';
 var CLIENT_SECRET = 'kRhDQVkPWLwlzkt02RmzkGVV';
 var REDIRECT_URL = 'urn:ietf:wg:oauth:2.0:oob';
-var oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL);
 var credentials = fs.readFileSync(process.env.HOME + '/.gmailOauth2Token.json').toString('utf8');
-oauth2Client.setCredentials(JSON.parse(credentials));
+
+var oauth2Client, gmailRefreshInterval;
+
+var gmailConnect = function() {
+    // Client ID and client secret are available at
+    // https://code.google.com/apis/console
+    oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URL);
+    oauth2Client.setCredentials(JSON.parse(credentials));
+};
 
 var nodifierConnect = require('nodifier_connect');
 var socket = new nodifierConnect();
@@ -28,6 +32,8 @@ var refreshGmail = function() {
         if(err) {
             console.log('ERROR in refreshGmail()');
             console.log(err);
+            console.log('Reconnecting...');
+            gmailConnect();
         } else {
             var gmailUnread = response.messages;
 
@@ -156,8 +162,10 @@ socket.on('markAs', function(notifications) {
 });
 
 socket.once('open', function() {
+    gmailConnect();
     refreshGmail();
-    setInterval(refreshGmail, 5000);
+    clearInterval(gmailRefreshInterval);
+    gmailRefreshInterval = setInterval(refreshGmail, 5000);
 });
 
 process.on('uncaughtException', function (err) {

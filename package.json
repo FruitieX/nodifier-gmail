@@ -5,7 +5,7 @@
   "main": "gmail.js",
   "dependencies": {
     "googleapis": "^1.0.11",
-    "net-event": ">=0.0.5"
+    "socket.io-client": "^1.3.5"
   },
   "devDependencies": {},
   "scripts": {

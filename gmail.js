@@ -17,12 +17,8 @@ var gmailConnect = function() {
     oauth2Client.setCredentials(JSON.parse(credentials));
 };
 
-var netEvent = require('net-event');
-
 var config = require(process.env.HOME + '/.nodifier/config.js');
 var options = {
-    host: config.host,
-    port: config.port,
     tls: config.tls,
     key: fs.readFileSync(process.env.HOME + '/.nodifier/nodifier-key.pem'),
     cert: fs.readFileSync(process.env.HOME + '/.nodifier/nodifier-cert.pem'),
@@ -30,7 +26,7 @@ var options = {
     rejectUnauthorized: config.rejectUnauthorized
 };
 
-var socket = new netEvent(options);
+var socket = require('socket.io-client')((config.tls ? 'https://' : 'http://') + config.host + ':' + config.port, options);
 
 // keep track of which messages we've seen before
 var unread = {};
@@ -71,7 +67,7 @@ var refreshGmail = function() {
                                 'contextfg': 'black'
                             };
 
-                            socket.send('newNotification', notification);
+                            socket.emit('newNotification', notification);
                         });
                     }
                 }
@@ -91,7 +87,7 @@ var refreshGmail = function() {
                     console.log('refreshGmail(): synced read mail ' + id);
 
                     // mark id as read in nodifier
-                    socket.send('markAs', {
+                    socket.emit('markAs', {
                         'read': true,
                         'uid': id,
                         'source': 'mail'
@@ -173,7 +169,7 @@ socket.on('markAs', function(notifications) {
     }
 });
 
-socket.once('open', function() {
+socket.once('connect', function() {
     gmailConnect();
     refreshGmail();
     clearInterval(gmailRefreshInterval);
